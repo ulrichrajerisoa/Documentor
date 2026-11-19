@@ -3,7 +3,8 @@ Class {
 	#superclass : 'Object',
 	#instVars : [
 		'builder',
-		'targetClass'
+		'targetClass',
+		'linter'
 	],
 	#category : 'Documentor',
 	#package : 'Documentor'
@@ -40,7 +41,8 @@ Documentor >> appendDocumentationForClass: aClass [
 		documentHierarchyOf: aClass;
 		documentInstanceVariablesOf: aClass;
 		documentMethodsWithCommentsOf: aClass;
-		documentMetricsOf: aClass
+		documentMetricsOf: aClass;
+		documentLintOf: aClass
 ]
 
 { #category : 'generating' }
@@ -68,6 +70,39 @@ Documentor >> documentInstanceVariablesOf: aClass [
 			builder unorderedListDuring: [
 				vars do: [ :each |
 					builder item: [ builder monospace: each ] ] ] ]
+]
+
+{ #category : 'private' }
+Documentor >> documentLintOf: aClass [
+	| noInstVarMethods noSelfOrInstVarMethods totalComplexity |
+	noInstVarMethods := (linter methodsWithoutDirectInstVarAccess: aClass)
+		collect: [ :m | m selector ]
+		as: SortedCollection.
+	noSelfOrInstVarMethods := (linter methodsWithoutSelfOrInstVarAccess: aClass)
+		collect: [ :m | m selector ]
+		as: SortedCollection.
+	totalComplexity := linter totalCyclomaticComplexityOf: aClass.
+
+	builder header: [ builder text: 'Mini Linter' ] withLevel: 2.
+	builder unorderedListDuring: [
+		builder item: [
+			builder
+				text: 'Total cyclomatic complexity: ';
+				text: totalComplexity asString ] ].
+
+	builder header: [ builder text: 'Methods without direct instance variable access' ] withLevel: 3.
+	noInstVarMethods
+		ifEmpty: [ builder paragraph: [ builder text: 'None.' ] ]
+		ifNotEmpty: [ :list |
+			builder unorderedListDuring: [
+				list do: [ :sel | builder item: [ builder monospace: sel ] ] ] ].
+
+	builder header: [ builder text: 'Methods without self or instance variable access' ] withLevel: 3.
+	noSelfOrInstVarMethods
+		ifEmpty: [ builder paragraph: [ builder text: 'None.' ] ]
+		ifNotEmpty: [ :list |
+			builder unorderedListDuring: [
+				list do: [ :sel | builder item: [ builder monospace: sel ] ] ] ]
 ]
 
 { #category : 'as yet unclassified' }
@@ -162,7 +197,8 @@ Documentor >> exportPackageNamed: aPackageName toFile: aFileReference [
 { #category : 'initialization' }
 Documentor >> initialize [
 	super initialize.
-	builder := MicMicrodownTextualBuilder new
+	linter := DocumentorLinter new.
+	self resetBuilder
 ]
 
 { #category : 'generating' }

@@ -59,6 +59,16 @@ DocumentorTest >> testExportPackageToFile [
 ]
 
 { #category : 'tests' }
+DocumentorTest >> testMiniLinterReport [
+	| result |
+	result := (Documentor on: Point) report.
+	self assert: (result includesSubstring: '## Mini Linter').
+	self assert: (result includesSubstring: 'Total cyclomatic complexity:').
+	self assert: (result includesSubstring: 'Methods without direct instance variable access').
+	self assert: (result includesSubstring: 'Methods without self or instance variable access')
+]
+
+{ #category : 'tests' }
 DocumentorTest >> testReportOnOrderedCollection [
 	| result |
 	result := (Documentor on: OrderedCollection) report.
