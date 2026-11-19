@@ -2,20 +2,45 @@ Class {
 	#name : 'Documentor',
 	#superclass : 'Object',
 	#instVars : [
-		'builder'
+		'builder',
+		'targetClass'
 	],
 	#category : 'Documentor',
 	#package : 'Documentor'
 }
 
-{ #category : 'as yet unclassified' }
+{ #category : 'instance creation' }
+Documentor class >> on: aClass [
+	^ self new
+		targetClass: aClass;
+		yourself
+]
+
+{ #category : 'private' }
 Documentor >> appendDocumentationForClass: aClass [
+	| firstCommentParagraph superclassName |
+	firstCommentParagraph := (aClass comment ifEmpty: [ 'No class comment.' ]) lines
+		ifEmpty: [ 'No class comment.' ]
+		ifNotEmpty: [ :lines | lines first ].
+	superclassName := aClass superclass
+		ifNil: [ 'nil' ]
+		ifNotNil: [ :sup | sup name ].
+
 	builder
 		header: [ builder text: aClass name ] withLevel: 1;
-		paragraph: [ builder text: (aClass comment ifEmpty: [ 'No class comment.' ]) ].
+		paragraph: [
+			builder
+				text: 'A subclass of ';
+				monospace: superclassName;
+				text: ', defined in package ';
+				monospace: aClass package name ];
+		paragraph: [ builder text: firstCommentParagraph ].
+
 	self
+		documentHierarchyOf: aClass;
 		documentInstanceVariablesOf: aClass;
-		documentMethodsOf: aClass
+		documentMethodsWithCommentsOf: aClass;
+		documentMetricsOf: aClass
 ]
 
 { #category : 'generating' }
@@ -23,6 +48,15 @@ Documentor >> documentClass: aClass [
 	self resetBuilder.
 	self appendDocumentationForClass: aClass.
 	^ builder contents
+]
+
+{ #category : 'private' }
+Documentor >> documentHierarchyOf: aClass [
+	| chain |
+	chain := aClass allSuperclasses reversed copyWith: aClass.
+	builder header: [ builder text: 'Hierarchy' ] withLevel: 2.
+	builder unorderedListDuring: [
+		chain do: [ :each | builder item: [ builder monospace: each name ] ] ]
 ]
 
 { #category : 'as yet unclassified' }
@@ -45,6 +79,66 @@ Documentor >> documentMethodsOf: aClass [
 			builder unorderedListDuring: [
 				selectors sorted do: [ :each |
 					builder item: [ builder monospace: each ] ] ] ]
+]
+
+{ #category : 'private' }
+Documentor >> documentMethodsWithCommentsOf: aClass [
+	builder header: [ builder text: 'Methods' ] withLevel: 2.
+	aClass methods
+		ifEmpty: [ builder paragraph: [ builder text: 'None.' ] ]
+		ifNotEmpty: [ :methods |
+			builder unorderedListDuring: [
+				(methods sorted: [ :a :b | a selector < b selector ]) do: [ :method |
+					| commentText |
+					commentText := method comment ifNil: [ 'No comment.' ].
+					builder item: [
+						builder
+							monospace: method selector;
+							text: ' - ';
+							text: commentText ] ] ] ]
+]
+
+{ #category : 'private' }
+Documentor >> documentMetricsOf: aClass [
+	| longMethods |
+	builder header: [ builder text: 'Metrics' ] withLevel: 2.
+	builder unorderedListDuring: [
+		builder
+			item: [
+				builder
+					text: 'Depth of inheritance: ';
+					text: aClass allSuperclasses size asString ];
+			item: [
+				builder
+					text: 'It inherits ';
+					text: (aClass allInstVarNames size - aClass instVarNames size) asString;
+					text: ' fields' ];
+			item: [
+				builder
+					text: 'It defines ';
+					text: aClass instVarNames size asString;
+					text: ' fields' ];
+			item: [
+				builder
+					text: 'It defines ';
+					text: aClass methods size asString;
+					text: ' methods' ];
+			item: [
+				builder
+					text: 'It inherits ';
+					text: (aClass allSelectors size - aClass selectors size) asString;
+					text: ' methods' ];
+			item: [
+				builder
+					text: 'Methods invoking super: ';
+					text: (aClass methods count: [ :m | m sendsToSuper ]) asString ] ].
+	longMethods := aClass selectors select: [ :each | each size > 25 ].
+	builder header: [ builder text: 'Overly long method names' ] withLevel: 3.
+	longMethods
+		ifEmpty: [ builder paragraph: [ builder text: 'None.' ] ]
+		ifNotEmpty: [ :list |
+			builder unorderedListDuring: [
+				list sorted do: [ :each | builder item: [ builder monospace: each ] ] ] ]
 ]
 
 { #category : 'generating' }
@@ -71,7 +165,17 @@ Documentor >> initialize [
 	builder := MicMicrodownTextualBuilder new
 ]
 
+{ #category : 'generating' }
+Documentor >> report [
+	^ self documentClass: targetClass
+]
+
 { #category : 'initialization' }
 Documentor >> resetBuilder [
 	builder := MicMicrodownTextualBuilder new
+]
+
+{ #category : 'accessing' }
+Documentor >> targetClass: aClass [
+	targetClass := aClass
 ]

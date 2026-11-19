@@ -15,6 +15,16 @@ DocumentorTest >> testDocumentClassHeaderAndComment [
 ]
 
 { #category : 'tests' }
+DocumentorTest >> testDocumentClassMetrics [
+	| result |
+	result := (Documentor on: Point) report.
+	self assert: (result includesSubstring: '## Metrics').
+	self assert: (result includesSubstring: 'Depth of inheritance: 2').
+	self assert: (result includesSubstring: 'It inherits 0 fields').
+	self assert: (result includesSubstring: 'It defines 2 fields')
+]
+
+{ #category : 'tests' }
 DocumentorTest >> testDocumentClassVariablesAndMethods [
 	| doc result |
 	doc := Documentor new.
@@ -46,4 +56,16 @@ DocumentorTest >> testExportPackageToFile [
 	self assert: file exists.
 	result := file contents.
 	self assert: (result includesSubstring: '# Documentor')
+]
+
+{ #category : 'tests' }
+DocumentorTest >> testReportOnOrderedCollection [
+	| result |
+	result := (Documentor on: OrderedCollection) report.
+	self assert: (result includesSubstring: '# OrderedCollection').
+	self assert: (result includesSubstring: '`SequenceableCollection`').
+	self assert: (result includesSubstring: '`Collections-Sequenceable`').
+	self assert: (result includesSubstring: '## Hierarchy').
+	self assert: (result includesSubstring: '`array`').
+	self assert: (result includesSubstring: '## Methods')
 ]
