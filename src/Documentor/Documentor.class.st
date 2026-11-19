@@ -9,13 +9,19 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-Documentor >> documentClass: aClass [
+Documentor >> appendDocumentationForClass: aClass [
 	builder
 		header: [ builder text: aClass name ] withLevel: 1;
 		paragraph: [ builder text: (aClass comment ifEmpty: [ 'No class comment.' ]) ].
 	self
 		documentInstanceVariablesOf: aClass;
-		documentMethodsOf: aClass.
+		documentMethodsOf: aClass
+]
+
+{ #category : 'generating' }
+Documentor >> documentClass: aClass [
+	self resetBuilder.
+	self appendDocumentationForClass: aClass.
 	^ builder contents
 ]
 
@@ -41,8 +47,31 @@ Documentor >> documentMethodsOf: aClass [
 					builder item: [ builder monospace: each ] ] ] ]
 ]
 
+{ #category : 'generating' }
+Documentor >> documentPackageNamed: aPackageName [
+	| package classes |
+	package := self packageOrganizer packageNamed: aPackageName.
+	classes := package definedClasses sorted: [ :a :b | a name < b name ].
+	self resetBuilder.
+	classes do: [ :each | self appendDocumentationForClass: each ].
+	^ builder contents
+]
+
+{ #category : 'generating' }
+Documentor >> exportPackageNamed: aPackageName toFile: aFileReference [
+	| markdown |
+	markdown := self documentPackageNamed: aPackageName.
+	aFileReference writeStreamDo: [ :stream | stream nextPutAll: markdown ].
+	^ aFileReference
+]
+
 { #category : 'initialization' }
 Documentor >> initialize [
 	super initialize.
+	builder := MicMicrodownTextualBuilder new
+]
+
+{ #category : 'initialization' }
+Documentor >> resetBuilder [
 	builder := MicMicrodownTextualBuilder new
 ]

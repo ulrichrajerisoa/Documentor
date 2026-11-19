@@ -25,3 +25,25 @@ DocumentorTest >> testDocumentClassVariablesAndMethods [
 	self assert: (result includesSubstring: '## Methods').
 	self assert: (result includesSubstring: '`distanceTo:`')
 ]
+
+{ #category : 'tests' }
+DocumentorTest >> testDocumentPackage [
+	| doc result |
+	doc := Documentor new.
+	result := doc documentPackageNamed: 'Documentor'.
+	self assert: (result includesSubstring: '# Documentor').
+	self assert: (result includesSubstring: '`builder`').
+	self assert: (result includesSubstring: '`documentClass:`').
+	self assert: (result includesSubstring: '`documentPackageNamed:`')
+]
+
+{ #category : 'tests' }
+DocumentorTest >> testExportPackageToFile [
+	| doc file result |
+	doc := Documentor new.
+	file := FileSystem memory workingDirectory / 'Documentor.md'.
+	doc exportPackageNamed: 'Documentor' toFile: file.
+	self assert: file exists.
+	result := file contents.
+	self assert: (result includesSubstring: '# Documentor')
+]
