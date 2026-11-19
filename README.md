@@ -4,8 +4,8 @@ A class documentation, software metrics, and AST-based mini-linter tool for Phar
 
 ## Authors
 
-- Ulrich
-- Gab
+- RAJERISOA Wenceslas Ulrich
+- RASOAMBININJARA Ernest Gabriela
 
 ## Installation
 
